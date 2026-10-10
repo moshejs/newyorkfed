@@ -1,6 +1,6 @@
 {
   "name": "newyorkfed",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Typed, zero-dependency client for the NY Fed's free Markets Data API — SOFR, EFFR, OBFR, BGCR, TGCR reference rates, SOFR averages & index, SOMA holdings. No API key required.",
   "keywords": [
     "newyorkfed",
