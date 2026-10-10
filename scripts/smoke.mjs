@@ -1,6 +1,6 @@
 // Live smoke test against the real API (not run in CI — see `npm test` for
 // the mocked suite). Usage: npm run smoke
-import { lastRates, latestRates, searchRates, sofrAverages, somaSummary } from "../dist/index.js";
+import { lastRates, latestRates, repoOperations, searchRates, sofrAverages, somaSummary } from "../dist/index.js";
 
 const latest = await latestRates();
 console.log(`latest rates: ${latest.map((r) => `${r.type}=${r.percentRate ?? "avg"}`).join(" ")}`);
@@ -19,4 +19,6 @@ console.log(`SOFR 30d avg ${avg.effectiveDate}: ${avg.average30day}% (index ${av
 
 const soma = await somaSummary();
 console.log(`SOMA summary rows: ${soma.length} (latest as-of ${soma.at(-1)?.asOfDate ?? soma[0]?.asOfDate})`);
+const [rrp] = await repoOperations("reverserepo", 1);
+console.log(`RRP ${rrp.operationDate}: $${rrp.totalAmtAccepted} accepted`);
 console.log("SMOKE OK");

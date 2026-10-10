@@ -26,16 +26,25 @@ avg.average30day; avg.average90day; avg.index; // compounded averages & index
 
 ## API
 
-All functions take an optional final `options`: `{ fetch?, baseUrl? }` (inject `fetch` for tests/proxies). Rates are percents, as published.
+All functions take an optional final `options`: `{ fetch?, baseUrl?, timeoutMs?, signal? }` (inject `fetch` for tests/proxies; `timeoutMs`/`signal` abort the request — there is no timeout by default). Rates are percents, as published. Rate series come back **newest first**.
 
-- **`latestRates()`** — the latest value of every reference rate
-- **`lastRates(type, n?)`** — last `n` observations; `type`: `"sofr" | "bgcr" | "tgcr"` (secured) or `"effr" | "obfr"` (unsecured) — routing is handled for you
-- **`searchRates(type, { startDate, endDate })`** — history over a date range
-- **`sofrAverages(n?)`** — 30/90/180-day compounded SOFR averages and the SOFR index
-- **`somaSummary()`** — the System Open Market Account holdings time series
-- **`raw(path)`** — escape hatch for the rest of the API (Treasury ops, repo ops, primary dealer stats, FX swaps, securities lending, AMBS): any documented `/api/...` path, parsed JSON back
+- **`latestRates()`** — the latest value of every reference rate, plus the SOFR averages row (`type: "SOFRAI"`)
+- **`lastRates(type, n?)`** — last `n` observations (1–999, the API's limit); `type`: `"sofr" | "bgcr" | "tgcr"` (secured), `"effr" | "obfr"` (unsecured) or `"sofrai"` — routing is handled for you
+- **`searchRates(type, { startDate, endDate })`** — history over an inclusive `YYYY-MM-DD` range (same `type`s). Impossible dates or a reversed range throw `RangeError`
+- **`sofrAverages(n?)`** — 30/90/180-day compounded SOFR averages and the SOFR index (same as `lastRates("sofrai", n)`)
+- **`repoOperations(kind?, n?)`** — last `n` repo / reverse repo (RRP) operation results; `kind`: `"repo" | "reverserepo" | "all"` (default). Amounts in dollars
+- **`somaSummary()`** — the System Open Market Account holdings time series, oldest first. Values are dollar strings exactly as published (`""` where an asset class didn't exist yet)
+- **`raw(path)`** — escape hatch for the rest of the API (Treasury ops, primary dealer stats, FX swaps, securities lending, AMBS): any documented `/api/...` path, parsed JSON back, e.g. `raw("/api/tsy/all/results/summary/last/5.json")`
 
-Failures throw `NewYorkFedError` with `status` and `url`. The mocked test suite runs offline; `npm run smoke` exercises the live API.
+### Data notes
+
+- Optional fields depend on the series and era: EFFR carries `targetRateFrom`/`targetRateTo` (`targetRateTo` absent before the Dec 2008 target range) and, before March 2016, `intraDayLow`/`intraDayHigh`/`stdDeviation` instead of percentiles/volume.
+- On a few days (e.g. 2019-05-31 and 2021-08-05 for SOFR/BGCR/TGCR) the NY Fed published percentiles as `"NA"`. Those fields are **omitted** so numeric fields are always numbers when present; `footnoteId` tells you a note applies.
+- `revisionIndicator` is `""` or `"r"` (revised).
+
+### Errors
+
+Non-2xx responses throw `NewYorkFedError` with `status` and `url` (the API answers unknown paths and out-of-range parameters with an empty HTTP 400). A 2xx body that isn't JSON, or lacks the expected wrapper (e.g. `refRates`), also throws `NewYorkFedError`. Invalid arguments throw `RangeError` before any request is made. The mocked test suite runs offline; `npm run smoke` exercises the live API.
 
 ## Related
 
